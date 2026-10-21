@@ -60,10 +60,10 @@
       "type": "objectgroup",
       "objects": [
         { "name": "pacman_start", "x": 448, "y": 480 },
-        { "name": "ghost_red", "x": 400, "y": 352 },
-        { "name": "ghost_pink", "x": 448, "y": 352 },
-        { "name": "ghost_blue", "x": 496, "y": 352 },
-        { "name": "ghost_orange", "x": 448, "y": 384 }
+        { "name": "ghost_red", "x": 400, "y": 368 },
+        { "name": "ghost_pink", "x": 432, "y": 368 },
+        { "name": "ghost_blue", "x": 496, "y": 368 },
+        { "name": "ghost_orange", "x": 464, "y": 368 }
       ]
     }
   ]
