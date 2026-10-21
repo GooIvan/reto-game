@@ -1,14 +1,42 @@
+:root {
+  --vh: 100vh;
+  --sidebar-w: 324px; /* ancho total del marcador lateral */
+  --page-h: 90px; /* horizontal: separación + márgenes + relleno del marco */
+  --page-v: 70px; /* vertical: márgenes + relleno del marco */
+  /* El canvas mide como máximo 896px y siempre cabe completo en la pantalla.
+     1.12 = proporción 896 / 800 del canvas. */
+  --canvas-w: min(
+    896px,
+    calc(100vw - var(--sidebar-w) - var(--page-h)),
+    calc((var(--vh) - var(--page-v)) * 1.12)
+  );
+}
+
+@supports (height: 100dvh) {
+  :root {
+    --vh: 100dvh;
+  }
+}
+
 body {
   background: radial-gradient(circle at top left, #0b0018, #000);
-  display: flex;
+  display: grid;
+  grid-template-columns: auto auto;
+  grid-template-rows: auto 1fr;
+  grid-template-areas:
+    "game score"
+    "game dpad";
   justify-content: center;
-  align-items: flex-start;
-  gap: 30px;
-  height: 100vh;
+  align-content: start;
+  align-items: start;
+  column-gap: 30px;
+  box-sizing: border-box;
+  min-height: var(--vh);
   margin: 0;
   font-family: "Press Start 2P", monospace;
   color: #fff;
-  overflow: hidden;
+  overflow-x: hidden;
+  overscroll-behavior: none;
 }
 
 /* === MENÚ DE INICIO === */
@@ -18,10 +46,14 @@ body {
   left: 0;
   width: 100%;
   height: 100%;
+  box-sizing: border-box;
+  padding: 60px 16px; /* deja libres los botones de las esquinas */
+  overflow-y: auto;
   background: radial-gradient(circle at center, #1a0033, #000);
   display: flex;
   flex-direction: column;
   justify-content: center;
+  justify-content: safe center; /* si no cabe, empieza arriba y se puede desplazar */
   align-items: center;
   z-index: 1000;
   animation: fadeIn 0.5s ease-in;
@@ -31,13 +63,21 @@ body {
   display: none;
 }
 
+/* El juego y el marcador no se muestran hasta que el menú se oculta; si no,
+   se ven a través del menú mientras este hace el fadeIn al cargar la página. */
+#menu-container:not(.hidden) ~ #game-container,
+#menu-container:not(.hidden) ~ .scoreboard,
+#menu-container:not(.hidden) ~ .dpad {
+  display: none;
+}
+
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
 }
 
 .menu-title {
-  font-size: 64px;
+  font-size: clamp(28px, 11vw, 64px);
   color: #ffcc00;
   text-shadow: 0 0 20px #ff0, 0 0 40px #ff0;
   margin-bottom: 20px;
@@ -50,10 +90,10 @@ body {
 }
 
 .menu-subtitle {
-  font-size: 16px;
+  font-size: clamp(10px, 3.2vw, 16px);
   color: #00ffcc;
   text-shadow: 0 0 10px #00ffcc;
-  margin-bottom: 50px;
+  margin-bottom: clamp(20px, 6vh, 50px);
 }
 
 .menu-form {
@@ -61,7 +101,9 @@ body {
   border: 3px solid #5200ff;
   box-shadow: 0 0 30px #6f00ff88;
   border-radius: 20px;
-  padding: 40px 60px;
+  padding: clamp(20px, 6vw, 40px) clamp(14px, 6vw, 60px);
+  box-sizing: border-box;
+  max-width: 100%;
   text-align: center;
 }
 
@@ -73,7 +115,8 @@ body {
 }
 
 .menu-input {
-  width: 300px;
+  width: min(334px, 100%);
+  box-sizing: border-box;
   padding: 15px;
   font-family: "Press Start 2P", monospace;
   font-size: 14px;
@@ -119,13 +162,127 @@ body {
 
 .menu-ghosts {
   margin-top: 30px;
-  font-size: 12px;
+  font-size: clamp(8px, 2.4vw, 12px);
   color: #888;
   line-height: 2;
 }
 
+/* === BOTONES SECUNDARIOS (info y sonido) === */
+.info-button,
+.audio-toggle,
+.exit-button {
+  padding: 10px 16px;
+  font-family: "Press Start 2P", monospace;
+  font-size: 12px;
+  background: #0b0018;
+  border: 2px solid #5200ff;
+  border-radius: 10px;
+  color: #00ffcc;
+  cursor: pointer;
+  box-shadow: 0 0 15px #6f00ff88;
+  transition: all 0.3s;
+}
+
+.info-button:hover,
+.info-button:focus-visible,
+.audio-toggle:hover,
+.audio-toggle:focus-visible,
+.exit-button:hover,
+.exit-button:focus-visible {
+  border-color: #00ffcc;
+  box-shadow: 0 0 25px #00ffcc88;
+  outline: none;
+}
+
+.info-button {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+}
+
+/* Salir: tono rojizo para distinguirlo de los botones de sonido */
+.exit-button {
+  color: #ff6b8a;
+  border-color: #ff3366;
+  box-shadow: 0 0 15px #ff336688;
+}
+
+.exit-button:hover,
+.exit-button:focus-visible {
+  border-color: #ff6b8a;
+  box-shadow: 0 0 25px #ff6b8a88;
+}
+
+/* Desactivado: apagado y sin brillo */
+.audio-toggle[aria-pressed="false"] {
+  color: #888;
+  border-color: #333;
+  box-shadow: none;
+}
+
+.menu-audio {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  display: flex;
+  gap: 10px;
+}
+
+/* === MODAL DE INFORMACIÓN === */
+.info-modal {
+  width: calc(100% - 40px);
+  max-width: 600px;
+  padding: 0;
+  background: linear-gradient(145deg, #1a0033, #0b0018);
+  border: 3px solid #5200ff;
+  border-radius: 20px;
+  box-shadow: 0 0 30px #6f00ff88;
+  color: #fff;
+  text-align: center;
+}
+
+.info-modal[open] {
+  animation: fadeIn 0.3s ease-in;
+}
+
+.info-modal::backdrop {
+  background: rgba(0, 0, 0, 0.8);
+}
+
+.info-content {
+  padding: clamp(20px, 6vw, 40px) clamp(16px, 6vw, 50px);
+}
+
+.info-title {
+  margin: 0 0 30px;
+  font-size: clamp(13px, 4vw, 18px);
+  color: #ffcc00;
+  text-shadow: 0 0 10px #ff0;
+}
+
+.info-text {
+  margin: 0 0 35px;
+  font-size: clamp(10px, 3vw, 12px);
+  line-height: 2;
+}
+
+.info-text a {
+  color: #00ffcc;
+  text-shadow: 0 0 8px #00ffcc;
+}
+
+.info-text a:hover,
+.info-text a:focus-visible {
+  color: #fff;
+}
+
+.info-close {
+  font-size: 14px;
+}
+
 /* 🎮 LABERINTO */
 #game-container {
+  grid-area: game;
   position: relative;
   margin-top: 20px;
   box-shadow: 0 0 40px #160040 inset, 0 0 20px #6f00ff;
@@ -136,12 +293,17 @@ body {
 
 canvas {
   display: block;
+  width: var(--canvas-w);
+  height: auto; /* mantiene la proporción 896 x 800 */
   border-radius: 8px;
+  touch-action: none; /* los deslizamientos mueven a Pac-Man, no la página */
 }
 
 /* 🧾 TABLA DE PUNTUACIÓN */
 .scoreboard {
-  width: 280px;
+  grid-area: score;
+  box-sizing: border-box;
+  width: var(--sidebar-w);
   background: linear-gradient(145deg, #120028, #0b0018);
   border: 2px solid #5200ff;
   box-shadow: 0 0 25px #6f00ff88;
@@ -200,10 +362,308 @@ canvas {
   line-height: 1.6;
 }
 
+.game-actions {
+  margin-top: 15px;
+  border-top: 1px solid #333;
+  padding-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.game-actions .audio-toggle,
+.game-actions .exit-button {
+  padding: 8px;
+  font-size: 9px;
+}
+
 .controls {
   margin-top: 15px;
   font-size: 8px;
   border-top: 1px solid #333;
   padding-top: 10px;
   opacity: 0.7;
+}
+/* 🎮 CRUCETA TÁCTIL */
+.dpad {
+  --dpad-btn: 60px;
+  --dpad-border: 4px;
+  grid-area: dpad;
+  display: none; /* solo en pantallas táctiles */
+  grid-template-columns: repeat(3, var(--dpad-btn));
+  grid-template-rows: repeat(3, var(--dpad-btn));
+  gap: 6px;
+  justify-content: center;
+  margin: 14px 0 10px;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  touch-action: none;
+}
+
+@media (pointer: coarse) {
+  .dpad {
+    display: grid;
+  }
+}
+
+/* Botones estilo arcade de píxeles: esquinas rectas, borde grueso, bisel y
+   un "grosor" que se hunde al pulsar */
+.dpad-btn {
+  display: grid;
+  place-items: center;
+  padding: 0;
+  background: #14052e;
+  border: var(--dpad-border) solid #5200ff;
+  border-radius: 0;
+  color: #00ffcc;
+  box-shadow:
+    inset var(--dpad-border) var(--dpad-border) 0 #2a0f66,
+    inset calc(var(--dpad-border) * -1) calc(var(--dpad-border) * -1) 0 #0a0120,
+    0 var(--dpad-border) 0 #2e0099,
+    0 0 18px #6f00ff66;
+  cursor: pointer;
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.dpad-btn:active,
+.dpad-btn.pressed {
+  background: #2a0a7a;
+  border-color: #00ffcc;
+  color: #fff;
+  transform: translateY(var(--dpad-border));
+  box-shadow:
+    inset var(--dpad-border) var(--dpad-border) 0 #0a0120,
+    inset calc(var(--dpad-border) * -1) calc(var(--dpad-border) * -1) 0 #3a1a99,
+    0 0 14px #00ffcc88;
+}
+
+/* Flecha cuadriculada: cada celda es un cuadrado con un pequeño hueco */
+.pixel-arrow {
+  width: 66%;
+  height: 66%;
+  fill: currentColor;
+  shape-rendering: crispEdges;
+  filter: drop-shadow(0 0 3px currentColor);
+  pointer-events: none;
+}
+
+.dpad-left .pixel-arrow { transform: rotate(-90deg); }
+.dpad-right .pixel-arrow { transform: rotate(90deg); }
+.dpad-down .pixel-arrow { transform: rotate(180deg); }
+
+/* Centro decorativo de la cruz */
+.dpad-center {
+  grid-column: 2;
+  grid-row: 2;
+  background: #0d0322;
+  border: var(--dpad-border) solid #1d0c4a;
+  box-shadow: inset 0 0 0 calc(var(--dpad-border) * 2) #14052e;
+}
+
+.dpad-up { grid-column: 2; grid-row: 1; }
+.dpad-left { grid-column: 1; grid-row: 2; }
+.dpad-right { grid-column: 3; grid-row: 2; }
+.dpad-down { grid-column: 2; grid-row: 3; }
+
+/* === RESPONSIVE === */
+
+/* Pantallas angostas o bajas: marcador compacto y sin textos de ayuda de teclado */
+@media (max-width: 900px), (max-height: 520px) {
+  .scoreboard {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px 10px;
+    padding: 10px;
+  }
+
+  .scoreboard h2,
+  .ghost-status,
+  .controls {
+    display: none;
+  }
+
+  .scoreboard p {
+    margin: 0;
+    font-size: 9px;
+  }
+
+  .score-value {
+    font-size: 12px;
+  }
+
+  .heart-icon {
+    width: 14px;
+    height: 14px;
+    margin: 0 1px;
+  }
+
+  .game-actions {
+    grid-column: 1 / -1;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 2px;
+    padding-top: 8px;
+  }
+
+  .game-actions .audio-toggle,
+  .game-actions .exit-button {
+    flex: 1 1 auto;
+    padding: 8px 4px;
+    font-size: 8px;
+  }
+}
+
+/* Vertical (móvil / tablet): marcador arriba, juego al centro, cruceta abajo */
+@media (max-width: 900px) and (min-height: 521px) {
+  :root {
+    --stack-extra: 160px; /* marcador + separaciones */
+    --canvas-w: min(
+      896px,
+      calc(100vw - 24px),
+      calc((var(--vh) - var(--stack-extra)) * 1.12)
+    );
+  }
+
+  body {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto;
+    grid-template-areas:
+      "score"
+      "game"
+      "dpad";
+    justify-items: center;
+    row-gap: 10px;
+    padding: 8px;
+  }
+
+  #game-container {
+    margin-top: 0;
+    padding: 4px;
+  }
+
+  .scoreboard {
+    width: min(100%, 560px);
+    margin-top: 0;
+  }
+
+  .dpad {
+    margin: 0;
+  }
+}
+
+@media (max-width: 900px) and (min-height: 521px) and (pointer: coarse) {
+  :root {
+    --stack-extra: 336px; /* + cruceta */
+  }
+
+  .dpad {
+    --dpad-btn: 56px;
+  }
+}
+
+/* Móviles verticales de poca altura: cruceta más chica para dejar más espacio al juego */
+@media (max-width: 900px) and (min-height: 521px) and (max-height: 700px) and (pointer: coarse) {
+  :root {
+    --stack-extra: 312px;
+  }
+
+  .dpad {
+    --dpad-btn: 48px;
+  }
+}
+
+/* Apaisado bajo (móvil girado): juego a la izquierda, marcador y cruceta a la derecha */
+@media (max-height: 520px) {
+  :root {
+    --sidebar-w: 250px;
+    --page-h: 40px;
+    --page-v: 28px;
+  }
+
+  body {
+    column-gap: 12px;
+  }
+
+  #game-container {
+    margin-top: 6px;
+    padding: 4px;
+  }
+
+  .scoreboard {
+    margin-top: 6px;
+  }
+
+  .dpad {
+    --dpad-btn: 44px;
+    --dpad-border: 3px;
+    gap: 4px;
+    margin: 8px 0 0;
+  }
+
+  /* Menú compacto: sin la lista de fantasmas y con el campo y el botón en una línea */
+  #menu-container {
+    padding: 52px 16px;
+  }
+
+  .menu-title {
+    font-size: clamp(24px, 9vh, 36px);
+    margin-bottom: 8px;
+  }
+
+  .menu-subtitle {
+    font-size: 11px;
+    margin-bottom: 12px;
+  }
+
+  .menu-form {
+    padding: 14px 24px;
+  }
+
+  .menu-label {
+    font-size: 11px;
+    margin-bottom: 8px;
+  }
+
+  .menu-input {
+    padding: 10px;
+    margin-bottom: 0;
+  }
+
+  .menu-button {
+    padding: 10px 28px;
+    font-size: 14px;
+  }
+
+  .menu-ghosts {
+    display: none;
+  }
+}
+
+/* Teléfonos: botones de las esquinas más pequeños y audio en columna */
+@media (max-width: 480px) {
+  #menu-container {
+    padding: 84px 12px;
+  }
+
+  .info-button,
+  .audio-toggle {
+    padding: 8px 10px;
+    font-size: 9px;
+  }
+
+  .info-button {
+    top: 12px;
+    right: 12px;
+  }
+
+  .menu-audio {
+    top: 12px;
+    left: 12px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
 }

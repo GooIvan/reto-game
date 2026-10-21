@@ -1,64 +1,155 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>PacMan 3D</title>
-  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
-  <link href="styles.css" rel="stylesheet">
-</head>
-<body>
-  <!-- === MENÚ DE INICIO === -->
-  <div id="menu-container">
-    <div class="menu-title">PAC-MAN</div>
-    <div class="menu-subtitle">👾 Retro Arcade Game 👾</div>
-    
-    <div class="menu-form">
-      <label class="menu-label">Ingresa tu nombre:</label>
-      <input 
-        type="text" 
-        id="username-input" 
-        class="menu-input" 
-        placeholder="Jugador" 
-        maxlength="15"
-        autofocus
-      />
-      <button id="start-button" class="menu-button">Jugar</button>
-      
-      <div class="menu-ghosts">
-        👻 Fantasma Rojo - Perseguidor<br>
-        💖 Fantasma Rosa - Anticipador<br>
-        💙 Fantasma Azul - Patrullador<br>
-        🧡 Fantasma Naranja - Aleatorio
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PacMan 3D</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap"
+      rel="stylesheet"
+    />
+    <link href="styles.css" rel="stylesheet" />
+  </head>
+  <body>
+    <!-- === MENÚ DE INICIO === -->
+    <div id="menu-container">
+      <button
+        id="info-button"
+        class="info-button"
+        type="button"
+        aria-haspopup="dialog"
+      >
+        Info
+      </button>
+
+      <div class="menu-audio">
+        <button class="audio-toggle" data-sound="music" type="button">
+          Música: ON
+        </button>
+        <button class="audio-toggle" data-sound="effects" type="button">
+          Efectos: ON
+        </button>
+      </div>
+
+      <div class="menu-title">PAC-MAN</div>
+      <div class="menu-subtitle">👾 Retro Arcade Game 👾</div>
+
+      <div class="menu-form">
+        <label class="menu-label">Ingresa tu nombre:</label>
+        <input
+          type="text"
+          id="username-input"
+          class="menu-input"
+          placeholder="Jugador"
+          maxlength="15"
+          autofocus
+        />
+        <button id="start-button" class="menu-button">Jugar</button>
+
+        <div class="menu-ghosts">
+          👻 Fantasma Rojo - Perseguidor<br />
+          💖 Fantasma Rosa - Anticipador<br />
+          💙 Fantasma Azul - Patrullador<br />
+          🧡 Fantasma Naranja - Aleatorio
+        </div>
+      </div>
+
+      <!-- === MODAL DE INFORMACIÓN === -->
+      <dialog id="info-modal" class="info-modal" aria-labelledby="info-title">
+        <div class="info-content">
+          <h2 id="info-title" class="info-title">🏆 Acerca del proyecto</h2>
+          <p class="info-text">
+            Este proyecto fue desarrollado por
+            <a
+              href="https://github.com/BrianOrtegaa/"
+              target="_blank"
+              rel="noopener noreferrer"
+              >Brian Ortega</a
+            >
+            e
+            <a
+              href="https://github.com/GooIvan/"
+              target="_blank"
+              rel="noopener noreferrer"
+              >Iván Madera</a
+            >
+            durante una prueba realizada en el SENA, obteniendo el primer lugar
+            en el Reto Game del Primer Encuentro de Tecnología e Innovación SENA
+            BIT.
+          </p>
+          <button
+            id="info-close"
+            class="menu-button info-close"
+            type="button"
+            autofocus
+          >
+            Cerrar
+          </button>
+        </div>
+      </dialog>
+    </div>
+
+    <div id="game-container">
+      <canvas id="gameCanvas" width="896" height="800"></canvas>
+    </div>
+
+    <!-- 🧾 SCOREBOARD -->
+    <div class="scoreboard">
+      <h2>🏁 PUNTUACIÓN</h2>
+      <p>Jugador: <span class="score-value" id="username">---</span></p>
+      <p>Puntos: <span class="score-value" id="score">0</span></p>
+      <p>Vidas: <span class="lives" id="lives">3</span></p>
+      <p>Récord: <span class="highscore" id="highscore">0</span></p>
+
+      <div class="ghost-status">
+        👻 Rojo: Persiguiendo<br />
+        💖 Rosa: Anticipando<br />
+        💙 Azul: Patrullando<br />
+        🧡 Naranja: Aleatorio
+      </div>
+
+      <div class="game-actions">
+        <button class="audio-toggle" data-sound="music" type="button">
+          Música: ON
+        </button>
+        <button class="audio-toggle" data-sound="effects" type="button">
+          Efectos: ON
+        </button>
+        <button id="exit-button" class="exit-button" type="button">
+          Salir
+        </button>
+      </div>
+
+      <div class="controls">
+        ⌨️ CONTROLES<br />
+        ↑↓←→ o WASD
       </div>
     </div>
-  </div>
 
-  <div id="game-container">
-    <canvas id="gameCanvas" width="896" height="800"></canvas>
-  </div>
+    <!-- 🎮 CRUCETA (solo en pantallas táctiles) -->
+    <div class="dpad" aria-label="Controles táctiles">
+      <!-- Flecha de píxeles (9x9 celdas), definida una vez y girada con CSS -->
+      <svg width="0" height="0" style="position: absolute" aria-hidden="true">
+        <symbol id="pixel-arrow" viewBox="0 0 9 9">
+          <path d="M4.1 0.1h0.8v0.8h-0.8zM3.1 1.1h0.8v0.8h-0.8zM4.1 1.1h0.8v0.8h-0.8zM5.1 1.1h0.8v0.8h-0.8zM2.1 2.1h0.8v0.8h-0.8zM3.1 2.1h0.8v0.8h-0.8zM4.1 2.1h0.8v0.8h-0.8zM5.1 2.1h0.8v0.8h-0.8zM6.1 2.1h0.8v0.8h-0.8zM1.1 3.1h0.8v0.8h-0.8zM2.1 3.1h0.8v0.8h-0.8zM3.1 3.1h0.8v0.8h-0.8zM4.1 3.1h0.8v0.8h-0.8zM5.1 3.1h0.8v0.8h-0.8zM6.1 3.1h0.8v0.8h-0.8zM7.1 3.1h0.8v0.8h-0.8zM0.1 4.1h0.8v0.8h-0.8zM1.1 4.1h0.8v0.8h-0.8zM2.1 4.1h0.8v0.8h-0.8zM3.1 4.1h0.8v0.8h-0.8zM4.1 4.1h0.8v0.8h-0.8zM5.1 4.1h0.8v0.8h-0.8zM6.1 4.1h0.8v0.8h-0.8zM7.1 4.1h0.8v0.8h-0.8zM8.1 4.1h0.8v0.8h-0.8zM3.1 5.1h0.8v0.8h-0.8zM4.1 5.1h0.8v0.8h-0.8zM5.1 5.1h0.8v0.8h-0.8zM3.1 6.1h0.8v0.8h-0.8zM4.1 6.1h0.8v0.8h-0.8zM5.1 6.1h0.8v0.8h-0.8zM3.1 7.1h0.8v0.8h-0.8zM4.1 7.1h0.8v0.8h-0.8zM5.1 7.1h0.8v0.8h-0.8zM3.1 8.1h0.8v0.8h-0.8zM4.1 8.1h0.8v0.8h-0.8zM5.1 8.1h0.8v0.8h-0.8z" />
+        </symbol>
+      </svg>
 
-  <!-- 🧾 SCOREBOARD -->
-  <div class="scoreboard">
-    <h2>🏁 PUNTUACIÓN</h2>
-    <p>Jugador: <span class="score-value" id="username">---</span></p>
-    <p>Puntos: <span class="score-value" id="score">0</span></p>
-    <p>Vidas: <span class="lives" id="lives">3</span></p>
-    <p>Récord: <span class="highscore" id="highscore">0</span></p>
-
-    <div class="ghost-status">
-      👻 Rojo: Persiguiendo<br>
-      💖 Rosa: Anticipando<br>
-      💙 Azul: Patrullando<br>
-      🧡 Naranja: Aleatorio
+      <button class="dpad-btn dpad-up" data-dir="up" type="button" aria-label="Arriba">
+        <svg class="pixel-arrow" viewBox="0 0 9 9" aria-hidden="true"><use href="#pixel-arrow" /></svg>
+      </button>
+      <button class="dpad-btn dpad-left" data-dir="left" type="button" aria-label="Izquierda">
+        <svg class="pixel-arrow" viewBox="0 0 9 9" aria-hidden="true"><use href="#pixel-arrow" /></svg>
+      </button>
+      <div class="dpad-center" aria-hidden="true"></div>
+      <button class="dpad-btn dpad-right" data-dir="right" type="button" aria-label="Derecha">
+        <svg class="pixel-arrow" viewBox="0 0 9 9" aria-hidden="true"><use href="#pixel-arrow" /></svg>
+      </button>
+      <button class="dpad-btn dpad-down" data-dir="down" type="button" aria-label="Abajo">
+        <svg class="pixel-arrow" viewBox="0 0 9 9" aria-hidden="true"><use href="#pixel-arrow" /></svg>
+      </button>
     </div>
 
-    <div class="controls">
-      ⌨️ CONTROLES<br>
-      ↑↓←→ o WASD
-    </div>
-  </div>
-
-  <script src="game.js"></script>
-</body>
+    <script type="module" src="js/main.js"></script>
+  </body>
 </html>
